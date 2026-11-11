@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-page="index">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Classic Movies | 免费经典电影 — Watch public-domain classic films free</title>
+<meta name="description" content="35 classic public-domain films free to watch online: Chaplin, horror, film noir, Chinese classics, all from the Internet Archive (archive.org).">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="index.html">🎬 免费经典电影<span>FREE CLASSIC MOVIES</span></a>
+    <nav>
+      <a href="index.html" class="active" data-i18n="nav.home">Home</a>
+      <a href="about.html" data-i18n="nav.about">About</a>
+      <a href="contact.html" data-i18n="nav.contact">Contact</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacy Policy</a>
+    </nav>
+    <label class="lang-switch">
+      <span aria-hidden="true">🌐</span>
+      <select id="langSelect" aria-label="Language">
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+        <option value="sv">Svenska</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+      </select>
+    </label>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="ad-slot ad-banner" role="complementary" data-i18n="ad">Ad space</div>
+
+  <section class="intro">
+    <h1 data-i18n="intro.h1">Free classic movies in the public domain — watch for free</h1>
+    <p data-i18n="intro.p">35 classic films, all from the Internet Archive (archive.org) and in the public domain — free to watch. Videos stream directly from the Internet Archive, not through this site's servers.</p>
+  </section>
+
+  <div class="toolbar">
+    <div class="filters" id="filters"></div>
+    <input type="search" id="search" placeholder="Search titles…" aria-label="Search films" data-i18n-placeholder="search.ph" data-i18n-aria="search.aria">
+  </div>
+  <p class="count" id="count"></p>
+
+  <div class="grid" id="grid"></div>
+  <p class="note" data-i18n="note">Tip: click a poster to watch online. Some early films are silent or early sound films; picture quality follows the original restored version.</p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <nav>
+      <a href="index.html" data-i18n="nav.home">Home</a>
+      <a href="about.html" data-i18n="nav.about">About</a>
+      <a href="contact.html" data-i18n="nav.contact">Contact</a>
+      <a href="privacy.html" data-i18n="nav.privacy">Privacy Policy</a>
+    </nav>
+    <p data-i18n="footer.pd">All films on this site are public domain works from the Internet Archive (archive.org), free to watch. Poster images are also from the Internet Archive.</p>
+  </div>
+</footer>
+
+<div class="modal" id="watchModal" role="dialog" aria-modal="true" aria-label="播放影片">
+  <div class="modal-box">
+    <button class="close" id="closeModal" aria-label="Close" data-i18n-aria="watch.close">×</button>
+    <video id="player" controls preload="metadata" playsinline></video>
+    <h2 id="watchTitle"></h2>
+    <p class="meta" id="watchMeta"></p>
+    <p class="pd-note"><span data-i18n="watch.pd">This film is in the public domain. Source: Internet Archive (archive.org). </span><a id="iaLink" href="#" target="_blank" rel="noopener" data-i18n="watch.ia">View this film on Internet Archive →</a></p>
+  </div>
+</div>
+
+<script src="i18n.js"></script>
+<script>
+var CAT_KEYS = ["all", "Adventure", "Animation", "Comedy", "Drama", "Horror", "Mystery", "Noir", "Sci-Fi", "Chinese"];
+function catLabel(key) { return t("cat." + key); }
+function yearLabel(y) { return currentLang === "zh" ? y + " 年" : String(y); }
+
+// 影片数据：标题、年份、分类、Internet Archive 直链、条目 id（用于海报与详情页）
+var FILMS = [
+  { t: "Captain Kidd", y: 1945, c: "Adventure", u: "https://archive.org/download/captain-kidd-1945_202609/CaptainKidd_512kb.mp4", id: "captain-kidd-1945_202609" },
+  { t: "The Most Dangerous Game", y: 1932, c: "Adventure", u: "https://archive.org/download/TheMostDangerousGame/TheMostDangerousGame_512kb.mp4", id: "TheMostDangerousGame" },
+  { t: "The Lost World", y: 1925, c: "Adventure", u: "https://archive.org/download/lost_world/lost_world_512kb.mp4", id: "lost_world" },
+  { t: "The Iron Mask", y: 1929, c: "Adventure", u: "https://archive.org/download/iron_mask/iron_mask_512kb.mp4", id: "iron_mask" },
+  { t: "Mr. Robinson Crusoe", y: 1932, c: "Adventure", u: "https://archive.org/download/mr_robinson_crusoe/video_512kb.mp4", id: "mr_robinson_crusoe" },
+  { t: "Popeye the Sailor meets Sinbad the Sailor", y: 1936, c: "Animation", u: "https://archive.org/download/Popeye_meetsSinbadtheSailor/Popeye_meetsSinbadtheSailor_512kb.mp4", id: "Popeye_meetsSinbadtheSailor" },
+  { t: "Charlie Chaplin's 'The Vagabond'", y: 1916, c: "Comedy", u: "https://archive.org/download/CC_1916_07_10_TheVagabond/CC_1916_07_10_TheVagabond.mp4", id: "CC_1916_07_10_TheVagabond" },
+  { t: "Charlie Chaplin's 'The Pawnshop'", y: 1916, c: "Comedy", u: "https://archive.org/download/CC_1916_10_02_ThePawnshop/CC_1916_10_02_ThePawnshop_512kb.mp4", id: "CC_1916_10_02_ThePawnshop" },
+  { t: "Charlie Chaplin's 'The Rink'", y: 1916, c: "Comedy", u: "https://archive.org/download/CC_1916_12_04_TheRink/CC_1916_12_04_TheRink_512kb.mp4", id: "CC_1916_12_04_TheRink" },
+  { t: "Charlie Chaplin's 'The Floorwalker'", y: 1916, c: "Comedy", u: "https://archive.org/download/CC_1916_05_15_TheFloorwalker/CC_1916_05_15_TheFloorwalker_512kb.mp4", id: "CC_1916_05_15_TheFloorwalker" },
+  { t: "Charlie Chaplin's 'The Cure'", y: 1917, c: "Comedy", u: "https://archive.org/download/CC_1917_04_16_TheCure/CC_1917_04_16_TheCure_512kb.mp4", id: "CC_1917_04_16_TheCure" },
+  { t: "Charlie Chaplin's 'Charlie Shanghaied'", y: 1915, c: "Comedy", u: "https://archive.org/download/CC_1915_10_04_CharlieShanghaied/CC_1915_10_04_CharlieShanghaied_512kb.mp4", id: "CC_1915_10_04_CharlieShanghaied" },
+  { t: "Charlie Chaplin's 'The Count'", y: 1916, c: "Comedy", u: "https://archive.org/download/CC_1916_09_04_TheCount/CC_1916_09_04_TheCount_512kb.mp4", id: "CC_1916_09_04_TheCount" },
+  { t: "Charlie Chaplin's 'One A.M.'", y: 1916, c: "Comedy", u: "https://archive.org/download/CC_1916_08_07_One_A_M/CC_1916_08_07_One_A_M_512kb.mp4", id: "CC_1916_08_07_One_A_M" },
+  { t: "Charlie Chaplin's 'Kids Auto Race At Venice'", y: 1914, c: "Comedy", u: "https://archive.org/download/CC_1914_02_07_KidsAutoRaceAtVenice/CC_1914_02_07_KidsAutoRaceAtVenice_512kb.mp4", id: "CC_1914_02_07_KidsAutoRaceAtVenice" },
+  { t: "Meet John Doe", y: 1941, c: "Drama", u: "https://archive.org/download/meet_john_doe/meet_john_doe_512kb.mp4", id: "meet_john_doe" },
+  { t: "Battleship Potemkin", y: 1925, c: "Drama", u: "https://archive.org/download/BattleshipPotemkin/Battleship_Potemkin_512kb.mp4", id: "BattleshipPotemkin" },
+  { t: "Night of the Living Dead", y: 1968, c: "Horror", u: "https://archive.org/download/Night.Of.The.Living.Dead_1080p/NightOfTheLivingDead.mp4", id: "Night.Of.The.Living.Dead_1080p" },
+  { t: "House on Haunted Hill", y: 1959, c: "Horror", u: "https://archive.org/download/house_on_haunted_hill_ipod/house_on_haunted_hill_512kb.mp4", id: "house_on_haunted_hill_ipod" },
+  { t: "Carnival of Souls", y: 1962, c: "Horror", u: "https://archive.org/download/CarnivalofSouls/CarnivalOfSouls_512kb.mp4", id: "CarnivalofSouls" },
+  { t: "White Zombie", y: 1932, c: "Horror", u: "https://archive.org/download/white_zombie/white_zombie_512kb.mp4", id: "white_zombie" },
+  { t: "The Screaming Skull", y: 1958, c: "Horror", u: "https://archive.org/download/TheScreamingSkull/TheScreamingSkull.mp4", id: "TheScreamingSkull" },
+  { t: "The Brain that Wouldn't Die", y: 1962, c: "Horror", u: "https://archive.org/download/the_brain_that_wouldnt_die/the_brain_that_wouldnt_die_512kb.mp4", id: "the_brain_that_wouldnt_die" },
+  { t: "The Vampire Bat", y: 1933, c: "Horror", u: "https://archive.org/download/TheVampireBat/TheVampireBat_512kb.mp4", id: "TheVampireBat" },
+  { t: "Nosferatu", y: 1922, c: "Horror", u: "https://archive.org/download/nosferatu-1922_202504/Nosferatu%20%281922%29.mp4", id: "nosferatu-1922_202504" },
+  { t: "The Phantom of the Opera", y: 1925, c: "Horror", u: "https://archive.org/download/ThePhantomoftheOpera/Phantom_of_the_Opera_512kb.mp4", id: "ThePhantomoftheOpera" },
+  { t: "The Thirteenth Chair", y: 1929, c: "Mystery", u: "https://archive.org/download/the-thirteenth-chair_1929/the-thirteenth-chair_1929.mp4", id: "the-thirteenth-chair_1929" },
+  { t: "D.O.A.", y: 1949, c: "Noir", u: "https://archive.org/download/7.3-d.-o.-a.-1949/7.3%20D.O.A.%C2%A0%281949%29%C2%A0.ia.mp4", id: "7.3-d.-o.-a.-1949" },
+  { t: "Teenagers from Outer Space", y: 1959, c: "Sci-Fi", u: "https://archive.org/download/teenagers_from_outerspace/Teenagers_from_Outer_Space_512kb.mp4", id: "teenagers_from_outerspace" },
+  { t: "神女 The Goddess", y: 1934, c: "Chinese", u: "https://archive.org/download/the.-goddess.-1934/The%20Goddess%20%281934%29/mp4/The.Goddess.1934.mp4", id: "the.-goddess.-1934" },
+  { t: "恋爱与义务 Love and Duty", y: 1931, c: "Chinese", u: "https://archive.org/download/love-and-duty-1931_202507/Love%20and%20Duty%20%281931%29.mp4", id: "love-and-duty-1931_202507" },
+  { t: "红侠 Red Heroine", y: 1929, c: "Chinese", u: "https://archive.org/download/red-heroine-1929/Red%20Heroine%20%281929%29.mp4", id: "red-heroine-1929" },
+  { t: "大小黄天霸 Big and Little Wong Tin Bar", y: 1962, c: "Chinese", u: "https://archive.org/download/JackieChanFirstMovieBigAndLittleWongTinBar/Jackie%20Chan%20first%20movie%20-%20Big%20and%20Little%20Wong%20Tin%20Bar%20%E5%A4%A7%E5%B0%8F%E9%BB%83%E5%A4%A9%E9%9C%B8.mp4", id: "JackieChanFirstMovieBigAndLittleWongTinBar" },
+  { t: "风云儿女 Children of Troubled Times", y: 1935, c: "Chinese", u: "https://archive.org/download/childrenoftroubledtimes/childrenoftroubledtimes.mp4", id: "childrenoftroubledtimes" },
+  { t: "怕老婆 Poor Daddy", y: 1929, c: "Chinese", u: "https://archive.org/download/poor-daddy-1929-four-tl-soundtrack/Poor%20Daddy%20%281929%29%20%28FourTL%20Soundtrack%29.mp4", id: "poor-daddy-1929-four-tl-soundtrack" }
+];
+
+var grid = document.getElementById("grid");
+var countEl = document.getElementById("count");
+var searchInput = document.getElementById("search");
+var filtersEl = document.getElementById("filters");
+var activeCat = "all";
+
+var PLACEHOLDER = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600"><rect width="400" height="600" fill="#22222a"/><text x="200" y="300" font-size="72" text-anchor="middle" fill="#e8b64c">\uD83C\uDFAC</text><text x="200" y="360" font-size="22" text-anchor="middle" fill="#a9a9b4">Free Classic Movies</text></svg>'
+);
+
+function posterUrl(f) { return "https://archive.org/services/img/" + f.id; }
+
+function renderFilters() {
+  filtersEl.innerHTML = "";
+  CAT_KEYS.forEach(function (key) {
+    var b = document.createElement("button");
+    b.textContent = catLabel(key);
+    b.setAttribute("data-cat", key);
+    if (key === activeCat) b.classList.add("active");
+    b.addEventListener("click", function () {
+      activeCat = key;
+      renderFilters();
+      renderGrid();
+    });
+    filtersEl.appendChild(b);
+  });
+}
+
+function renderGrid() {
+  var q = searchInput.value.trim().toLowerCase();
+  var list = FILMS.filter(function (f) {
+    var okCat = activeCat === "all" || f.c === activeCat;
+    var okQ = !q || f.t.toLowerCase().indexOf(q) !== -1 || String(f.y).indexOf(q) !== -1;
+    return okCat && okQ;
+  });
+  grid.innerHTML = "";
+  countEl.textContent = t("count").replace("{n}", list.length);
+  if (!list.length) {
+    var p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = t("empty");
+    grid.appendChild(p);
+    return;
+  }
+  list.forEach(function (f, i) {
+    var card = document.createElement("button");
+    card.className = "card";
+    card.setAttribute("aria-label", f.t + " (" + f.y + ")");
+    var img = document.createElement("img");
+    img.src = posterUrl(f);
+    img.alt = f.t + " 海报";
+    img.loading = "lazy";
+    img.onerror = function () { this.onerror = null; this.src = PLACEHOLDER; };
+    var body = document.createElement("div");
+    body.className = "card-body";
+    var title = document.createElement("p");
+    title.className = "card-title";
+    title.textContent = f.t;
+    var meta = document.createElement("p");
+    meta.className = "card-meta";
+    meta.textContent = yearLabel(f.y);
+    var tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = catLabel(f.c);
+    body.appendChild(title);
+    body.appendChild(meta);
+    body.appendChild(tag);
+    card.appendChild(img);
+    card.appendChild(body);
+    card.addEventListener("click", function () { openWatch(f); });
+    grid.appendChild(card);
+    // 第二个广告位：插在第 12 张卡片之后（影片行之间）
+    if (i === 11) {
+      var ad = document.createElement("div");
+      ad.className = "ad-slot ad-mid";
+      ad.setAttribute("role", "complementary");
+      ad.setAttribute("aria-label", t("ad"));
+      ad.textContent = t("ad");
+      grid.appendChild(ad);
+    }
+  });
+}
+
+var modal = document.getElementById("watchModal");
+var player = document.getElementById("player");
+function openWatch(f) {
+  document.getElementById("watchTitle").textContent = f.t + " (" + f.y + ")";
+  document.getElementById("watchMeta").textContent = catLabel(f.c) + " · " + yearLabel(f.y) + " · " + t("watch.pdlabel");
+  document.getElementById("iaLink").href = "https://archive.org/details/" + f.id;
+  player.src = f.u;
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  player.play().catch(function () {});
+  if (history.replaceState) history.replaceState(null, "", "#watch-" + FILMS.indexOf(f));
+}
+function closeWatch() {
+  player.pause();
+  player.removeAttribute("src");
+  player.load();
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+  if (history.replaceState) history.replaceState(null, "", location.pathname + location.search);
+}
+document.getElementById("closeModal").addEventListener("click", closeWatch);
+modal.addEventListener("click", function (e) { if (e.target === modal) closeWatch(); });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeWatch(); });
+searchInput.addEventListener("input", renderGrid);
+
+renderFilters();
+renderGrid();
+
+// 语言切换时重新渲染分类与卡片（分类名、年份、广告位随语言变化）
+window.__onLangChange = function () {
+  renderFilters();
+  renderGrid();
+};
+
+// 支持直接打开某部影片：#watch-0 … #watch-34
+(function () {
+  var m = location.hash.match(/^#watch-(\d+)$/);
+  if (m && FILMS[+m[1]]) openWatch(FILMS[+m[1]]);
+})();
+</script>
+</body>
+</html>
